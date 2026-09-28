@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>天涯神贴 · 纯文本在线阅读馆</title>
+  <meta name="description" content="天涯神贴精选合集（纯文本 TXT / Markdown 版）：涵盖财经房产、自我成长与认知、kkndme 大神专区，极速秒开、便携阅读与全文检索。">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📜</text></svg>">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      --bg-page: #f8f9fa;
+      --bg-sidebar: #ffffff;
+      --bg-reader: #ffffff;
+      --text-main: #24292f;
+      --text-muted: #6e7781;
+      --text-sub: #57606a;
+      --border-color: #e1e4e8;
+      --hover-bg: #f3f4f6;
+      --active-bg: #e8f0fe;
+      --active-color: #1a73e8;
+      --badge-bg: #f1f3f4;
+      --accent-color: #d93025;
+      --progress-bg: #1a73e8;
+      --sidebar-width: 340px;
+      --reader-max-width: 820px;
+      --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
+      --font-family-serif: "Songti SC", "SimSun", "STSong", "source-han-serif-sc", serif;
+      --font-family-kai: "Kaiti SC", "KaiTi", "STKaiti", "BiaoKai", serif;
+      --current-font: var(--font-family-sans);
+      --font-size-base: 18px;
+      --line-height: 1.85;
+    }
+
+    /* 羊皮纸护眼主题 */
+    body.theme-sepia {
+      --bg-page: #e8dfc8;
+      --bg-sidebar: #ede6d4;
+      --bg-reader: #f4ecd8;
+      --text-main: #383024;
+      --text-muted: #796e5d;
+      --text-sub: #5f5442;
+      --border-color: #dfd5be;
+      --hover-bg: #e5dcbe;
+      --active-bg: #dfd1a9;
+      --active-color: #8c4c1e;
+      --badge-bg: #e2d7ba;
+      --progress-bg: #8c4c1e;
+    }
+
+    /* 暗夜黑夜主题 */
+    body.theme-dark {
+      --bg-page: #121316;
+      --bg-sidebar: #18191d;
+      --bg-reader: #1e2025;
+      --text-main: #dce0e8;
+      --text-muted: #8b92a0;
+      --text-sub: #a4abb8;
+      --border-color: #2b2e36;
+      --hover-bg: #262930;
+      --active-bg: #2d3748;
+      --active-color: #63b3ed;
+      --badge-bg: #2b2e38;
+      --progress-bg: #63b3ed;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--current-font);
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      -webkit-font-smoothing: antialiased;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    /* 顶部进度条 */
+    #reading-progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 3px;
+      background-color: var(--progress-bg);
+      width: 0%;
+      z-index: 1000;
+      transition: width 0.1s linear;
+    }
+
+    /* 左侧侧边栏 */
+    #sidebar {
+      width: var(--sidebar-width);
+      height: 100vh;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      z-index: 100;
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .sidebar-header {
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .brand span.sub {
+      font-size: 12px;
+      font-weight: normal;
+      color: var(--text-muted);
+      background: var(--badge-bg);
+      padding: 2px 7px;
+      border-radius: 12px;
+    }
+
+    .search-box {
+      margin-top: 12px;
+      position: relative;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 8px 12px 8px 34px;
+      font-size: 14px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--bg-page);
+      color: var(--text-main);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .search-box input:focus {
+      border-color: var(--active-color);
+      box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15);
+    }
+
+    .search-box svg {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      fill: var(--text-muted);
+    }
+
+    /* 分类标签栏 */
+    .filter-tabs {
+      display: flex;
+      gap: 6px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border-color);
+      overflow-x: auto;
+      white-space: nowrap;
+      scrollbar-width: none;
+    }
+    .filter-tabs::-webkit-scrollbar { display: none; }
+
+    .filter-tab {
+      padding: 5px 11px;
+      border-radius: 16px;
+      font-size: 12px;
+      cursor: pointer;
+      background: var(--badge-bg);
+      color: var(--text-sub);
+      user-select: none;
+      transition: all 0.15s;
+    }
+
+    .filter-tab.active {
+      background: var(--active-color);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    /* 文章列表区域 */
+    .posts-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 10px;
+    }
+
+    .post-item {
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 4px;
+      transition: background-color 0.15s;
+      position: relative;
+    }
+
+    .post-item:hover {
+      background-color: var(--hover-bg);
+    }
+
+    .post-item.active {
+      background-color: var(--active-bg);
+      color: var(--active-color);
+    }
+
+    .post-item-title {
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+
+    .post-item-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .badge-top {
+      color: #fff;
+      background: #e53e3e;
+      font-size: 10px;
+      font-weight: bold;
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    .badge-cat {
+      background: var(--badge-bg);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    /* 右侧主阅读器 */
+    #main-reader {
+      flex: 1;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg-reader);
+    }
+
+    /* 工具栏 */
+    .reader-toolbar {
+      height: 56px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      background: var(--bg-reader);
+      z-index: 10;
+      flex-shrink: 0;
+    }
+
+    .toolbar-left, .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-toggle-menu {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 6px;
+      color: var(--text-main);
+    }
+    .btn-toggle-menu:hover { background: var(--hover-bg); }
+
+    .current-title {
+      font-size: 15px;
+      font-weight: 600;
+      max-width: 420px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tool-btn {
+      background: var(--badge-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: background 0.15s;
+    }
+
+    .tool-btn:hover {
+      background: var(--hover-bg);
+    }
+
+    /* 阅读视口区域 */
+    .reader-viewport {
+      flex: 1;
+      overflow-y: auto;
+      padding: 40px 24px 80px;
+      scroll-behavior: smooth;
+    }
+
+    .reader-container {
+      max-width: var(--reader-max-width);
+      margin: 0 auto;
+    }
+
+    /* 文章头部 */
+    .article-header {
+      margin-bottom: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px dashed var(--border-color);
+    }
+
+    .article-title {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.35;
+      margin-bottom: 14px;
+    }
+
+    .article-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* 正文样式 */
+    .article-content {
+      font-size: var(--font-size-base);
+      line-height: var(--line-height);
+      color: var(--text-main);
+      word-break: break-word;
+    }
+
+    .article-content p {
+      margin-bottom: 1.6em;
+      text-indent: 2em;
+    }
+
+    .article-content h1, .article-content h2, .article-content h3 {
+      margin: 1.8em 0 0.8em;
+      line-height: 1.3;
+      font-weight: 700;
+    }
+
+    .article-content h1 { font-size: 1.45em; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; }
+    .article-content h2 { font-size: 1.3em; }
+    .article-content h3 { font-size: 1.15em; }
+
+    .article-content blockquote {
+      margin: 1.5em 0;
+      padding: 10px 18px;
+      border-left: 4px solid var(--active-color);
+      background: var(--badge-bg);
+      color: var(--text-sub);
+      border-radius: 0 6px 6px 0;
+    }
+
+    /* 首屏欢迎视图 */
+    .welcome-view {
+      padding: 30px 10px;
+    }
+    .welcome-hero {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    .welcome-hero h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+    .welcome-hero p {
+      color: var(--text-muted);
+      font-size: 16px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+
+    .card {
+      background: var(--badge-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 18px;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+      border-color: var(--active-color);
+    }
+    .card-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--active-color);
+      margin-bottom: 8px;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      line-height: 1.4;
+    }
+    .card-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* 遮罩层（手机端） */
+    #sidebar-mask {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 90;
+    }
+
+    /* 移动端响应式 */
+    @media (max-width: 768px) {
+      #sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        transform: translateX(-100%);
+        box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+      }
+      #sidebar.open {
+        transform: translateX(0);
+      }
+      #sidebar-mask.show {
+        display: block;
+      }
+      .btn-toggle-menu {
+        display: inline-flex;
+      }
+      .current-title {
+        max-width: 180px;
+      }
+      .reader-viewport {
+        padding: 20px 16px 60px;
+      }
+      .article-title {
+        font-size: 22px;
+      }
+      :root {
+        --font-size-base: 17px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 顶部阅读进度条 -->
+  <div id="reading-progress"></div>
+
+  <!-- 侧边栏遮罩（移动端） -->
+  <div id="sidebar-mask" onclick="toggleSidebar(false)"></div>
+
+  <!-- 左侧文章导航 -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <div class="brand">
+        <span>📜 天涯神贴</span>
+        <span class="sub">纯文本馆</span>
+      </div>
+      <div class="search-box">
+        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input type="text" id="search-input" placeholder="搜索神贴、作者、关键词..." oninput="handleSearch(this.value)">
+      </div>
+    </div>
+
+    <!-- 分类筛选器 -->
+    <div class="filter-tabs">
+      <div class="filter-tab active" onclick="switchCategory('all', this)">全部 (87)</div>
+      <div class="filter-tab" onclick="switchCategory('top', this)">⭐ 精选必读</div>
+      <div class="filter-tab" onclick="switchCategory('kk', this)">🏠 kkndme</div>
+      <div class="filter-tab" onclick="switchCategory('growth', this)">🧠 认知成长</div>
+      <div class="filter-tab" onclick="switchCategory('finance', this)">📈 财经房产</div>
+    </div>
+
+    <!-- 列表容器 -->
+    <div class="posts-list" id="posts-list"></div>
+  </aside>
+
+  <!-- 右侧主阅读器 -->
+  <main id="main-reader">
+    <!-- 顶部工具栏 -->
+    <div class="reader-toolbar">
+      <div class="toolbar-left">
+        <button class="btn-toggle-menu" onclick="toggleSidebar(true)" title="展开目录">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+        </button>
+        <div class="current-title" id="toolbar-title">天涯神贴 · 纯文本在线阅读馆</div>
+      </div>
+      <div class="toolbar-right">
+        <!-- 字体大小调节 -->
+        <button class="tool-btn" onclick="adjustFontSize(-1)" title="缩小字号">A-</button>
+        <button class="tool-btn" onclick="adjustFontSize(1)" title="放大字号">A+</button>
+        <!-- 字体切换 -->
+        <button class="tool-btn" onclick="toggleFont()" id="btn-font" title="切换字体">宋体</button>
+        <!-- 主题切换 -->
+        <button class="tool-btn" onclick="toggleTheme()" id="btn-theme" title="切换主题">☀️</button>
+      </div>
+    </div>
+
+    <!-- 阅读视口 -->
+    <div class="reader-viewport" id="reader-viewport" onscroll="updateProgress()">
+      <div class="reader-container" id="reader-content">
+        <!-- 默认欢迎首屏内容由 JS 渲染 -->
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let allPosts = [];
+    let currentFilteredPosts = [];
+    let activeCategory = 'all';
+    let currentPostId = null;
+    let currentFontSize = parseInt(localStorage.getItem('ty_font_size') || '18');
+    let currentTheme = localStorage.getItem('ty_theme') || 'default'; // default | sepia | dark
+    let currentFontType = localStorage.getItem('ty_font_type') || 'sans'; // sans | serif | kai
+
+    // 初始化配置
+    applyTheme(currentTheme);
+    applyFont(currentFontType);
+    applyFontSize(currentFontSize);
+
+    // 加载数据
+    fetch('posts.json')
+      .then(r => r.json())
+      .then(data => {
+        allPosts = data;
+        currentFilteredPosts = allPosts;
+        renderSidebarList();
+        
+        // 检查 URL 路由
+        handleUrlHash();
+      })
+      .catch(err => {
+        console.error('加载 posts.json 失败:', err);
+        document.getElementById('posts-list').innerHTML = '<div style="padding:20px;color:red;">加载文章列表失败，请刷新重试</div>';
+      });
+
+    // 监听 Hash 变化
+    window.addEventListener('hashchange', handleUrlHash);
+
+    function handleUrlHash() {
+      const hash = window.location.hash;
+      if (hash.startsWith('#/post/')) {
+        const id = parseInt(hash.replace('#/post/', ''));
+        const post = allPosts.find(p => p.id === id);
+        if (post) {
+          loadPost(post);
+          return;
+        }
+      }
+      renderWelcomeView();
+    }
+
+    // 渲染侧边栏列表
+    function renderSidebarList() {
+      const listEl = document.getElementById('posts-list');
+      if (currentFilteredPosts.length === 0) {
+        listEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">无匹配神贴</div>';
+        return;
+      }
+
+      listEl.innerHTML = currentFilteredPosts.map(post => {
+        const isActive = post.id === currentPostId ? 'active' : '';
+        const topBadge = post.is_top ? '<span class="badge-top">必读</span>' : '';
+        const words = (post.char_count / 10000).toFixed(1) + '万字';
+        return `
+          <div class="post-item ${isActive}" onclick="navigateToPost(${post.id})">
+            <div class="post-item-title">${post.title}</div>
+            <div class="post-item-meta">
+              ${topBadge}
+              <span class="badge-cat">${post.category}</span>
+              <span>${words}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 导航到具体文章
+    function navigateToPost(id) {
+      window.location.hash = `#/post/${id}`;
+      toggleSidebar(false);
+    }
+
+    // 异步加载正文
+    function loadPost(post) {
+      currentPostId = post.id;
+      renderSidebarList();
+      document.getElementById('toolbar-title').innerText = post.title;
+
+      const viewport = document.getElementById('reader-viewport');
+      const container = document.getElementById('reader-content');
+      
+      container.innerHTML = `
+        <div style="text-align:center;padding:80px 0;color:var(--text-muted)">
+          <div style="font-size:24px;margin-bottom:12px;">⏳</div>
+          <div>正在飞速加载《${post.title}》...</div>
+        </div>
+      `;
+
+      fetch(encodeURI(post.path))
+        .then(r => r.text())
+        .then(text => {
+          let htmlContent = '';
+          if (post.is_markdown && typeof marked !== 'undefined') {
+            htmlContent = marked.parse(text);
+          } else {
+            // 普通纯文本格式化
+            const paragraphs = text.split(/\n\s*\n/);
+            htmlContent = paragraphs.map(p => {
+              const clean = p.trim();
+              if (!clean) return '';
+              return `<p>${clean.replace(/\n/g, '<br>')}</p>`;
+            }).join('');
+          }
+
+          const words = (post.char_count / 10000).toFixed(1);
+          container.innerHTML = `
+            <header class="article-header">
+              <h1 class="article-title">${post.title}</h1>
+              <div class="article-meta">
+                <span>📁 分类：${post.category}</span>
+                <span>📝 字数：约 ${words} 万字</span>
+                <span>⚡ 格式：${post.is_markdown ? 'Markdown' : '纯文本 TXT'}</span>
+              </div>
+            </header>
+            <div class="article-content">${htmlContent}</div>
+          `;
+
+          viewport.scrollTop = 0;
+          updateProgress();
+        })
+        .catch(err => {
+          container.innerHTML = `<div style="padding:40px;color:red;text-align:center;">读取文章内容失败，请检查网络后刷新重试。</div>`;
+        });
+    }
+
+    // 渲染首页欢迎视图
+    function renderWelcomeView() {
+      currentPostId = null;
+      renderSidebarList();
+      document.getElementById('toolbar-title').innerText = '天涯神贴 · 纯文本在线阅读馆';
+      const container = document.getElementById('reader-content');
+
+      const topPicks = [
+        { id: 3, title: 'kkndme 聊房神贴（脱水版）', desc: '天涯第一神贴，预言十年宏观走向，打通土地财政与货币金融。', tag: '宏观奠基' },
+        { id: 18, title: '这个时代“寒门再难出贵子”', desc: '以银行招聘真实跟踪为切面，剖析家庭背景与性格如何影响社会初战。', tag: '底层刺痛' },
+        { id: 12, title: '社会不教，精英不讲（50条铁律）', desc: '农家子弟摸爬滚打悟出的职场与利益博弈内功心法，刀刀见血。', tag: '实战成长' },
+        { id: 14, title: '大鹏金翅明王合集', desc: '撕碎底层道德迷障与认知内耗，天涯文字最犀利的大神合集。', tag: '认知破局' },
+        { id: 10, title: '05年周公子大战易烨卿', desc: '天涯论战第一名局，透析暴发户与百年世家的真实思维差异。', tag: '阶层透视' },
+        { id: 62, title: '经济大周期_踩准节拍再投资', desc: '海宁周期派代表作，从康波大波浪与信贷周期教普通人避险。', tag: '财富周期' }
+      ];
+
+      container.innerHTML = `
+        <div class="welcome-view">
+          <div class="welcome-hero">
+            <h1>📜 天涯神贴精选合集</h1>
+            <p>全网 87 篇经典神贴纯文本化归档，总计 1440+ 万纯汉字。轻量秒开、无水印排版，沉浸式阅读。</p>
+          </div>
+
+          <h3 style="margin-bottom:16px;font-size:18px;">⭐ 镇馆之宝 · 必读精选</h3>
+          <div class="cards-grid">
+            ${topPicks.map(p => `
+              <div class="card" onclick="navigateToPost(${p.id})">
+                <span class="card-tag">${p.tag}</span>
+                <div class="card-title">${p.title}</div>
+                <div class="card-desc">${p.desc}</div>
+              </div>
+            `).join('')}
+          </div>
+
+          <div style="background:var(--badge-bg);border:1px solid var(--border-color);border-radius:12px;padding:20px;line-height:1.7;font-size:14px;color:var(--text-sub);">
+            <div style="font-weight:bold;margin-bottom:6px;color:var(--text-main);">💡 阅读小提示：</div>
+            1. 点击左上角或侧边栏可随时切换文章或按关键词实时过滤；<br>
+            2. 右上角工具栏支持自由调节字号（A-/A+）、字体（黑体/宋体）以及暗夜护眼主题；<br>
+            3. 复制浏览器当前地址栏链接，可直接把对应文章分享给好友阅读。
+          </div>
+        </div>
+      `;
+    }
+
+    // 搜索过滤
+    function handleSearch(keyword) {
+      const q = keyword.trim().toLowerCase();
+      applyFilters(q, activeCategory);
+    }
+
+    // 分类切换
+    function switchCategory(cat, el) {
+      document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      activeCategory = cat;
+      const q = document.getElementById('search-input').value.trim().toLowerCase();
+      applyFilters(q, cat);
+    }
+
+    function applyFilters(keyword, category) {
+      currentFilteredPosts = allPosts.filter(post => {
+        const matchK = !keyword || post.title.toLowerCase().includes(keyword) || post.category.toLowerCase().includes(keyword);
+        let matchC = true;
+        if (category === 'top') matchC = post.is_top;
+        else if (category === 'kk') matchC = post.folder.includes('kkndme');
+        else if (category === 'growth') matchC = post.folder.includes('认知');
+        else if (category === 'finance') matchC = post.folder.includes('财经');
+        return matchK && matchC;
+      });
+      renderSidebarList();
+    }
+
+    // 移动端侧边栏切换
+    function toggleSidebar(open) {
+      const sidebar = document.getElementById('sidebar');
+      const mask = document.getElementById('sidebar-mask');
+      if (open) {
+        sidebar.classList.add('open');
+        mask.classList.add('show');
+      } else {
+        sidebar.classList.remove('open');
+        mask.classList.remove('show');
+      }
+    }
+
+    // 阅读进度条更新
+    function updateProgress() {
+      const vp = document.getElementById('reader-viewport');
+      const total = vp.scrollHeight - vp.clientHeight;
+      const progress = total > 0 ? (vp.scrollTop / total) * 100 : 0;
+      document.getElementById('reading-progress').style.width = Math.min(100, Math.max(0, progress)) + '%';
+    }
+
+    // 字号调节
+    function adjustFontSize(delta) {
+      currentFontSize = Math.min(26, Math.max(14, currentFontSize + delta));
+      applyFontSize(currentFontSize);
+      localStorage.setItem('ty_font_size', currentFontSize);
+    }
+    function applyFontSize(size) {
+      document.documentElement.style.setProperty('--font-size-base', size + 'px');
+    }
+
+    // 主题切换 (default -> sepia -> dark)
+    function toggleTheme() {
+      const themes = ['default', 'sepia', 'dark'];
+      let nextIdx = (themes.indexOf(currentTheme) + 1) % themes.length;
+      currentTheme = themes[nextIdx];
+      applyTheme(currentTheme);
+      localStorage.setItem('ty_theme', currentTheme);
+    }
+    function applyTheme(theme) {
+      document.body.className = '';
+      const btn = document.getElementById('btn-theme');
+      if (theme === 'sepia') {
+        document.body.classList.add('theme-sepia');
+        if (btn) btn.innerText = '📜';
+      } else if (theme === 'dark') {
+        document.body.classList.add('theme-dark');
+        if (btn) btn.innerText = '🌙';
+      } else {
+        if (btn) btn.innerText = '☀️';
+      }
+    }
+
+    // 字体切换 (sans -> serif -> kai)
+    function toggleFont() {
+      const fonts = ['sans', 'serif', 'kai'];
+      let nextIdx = (fonts.indexOf(currentFontType) + 1) % fonts.length;
+      currentFontType = fonts[nextIdx];
+      applyFont(currentFontType);
+      localStorage.setItem('ty_font_type', currentFontType);
+    }
+    function applyFont(type) {
+      const btn = document.getElementById('btn-font');
+      if (type === 'serif') {
+        document.documentElement.style.setProperty('--current-font', 'var(--font-family-serif)');
+        if (btn) btn.innerText = '宋体';
+      } else if (type === 'kai') {
+        document.documentElement.style.setProperty('--current-font', 'var(--font-family-kai)');
+        if (btn) btn.innerText = '楷体';
+      } else {
+        document.documentElement.style.setProperty('--current-font', 'var(--font-family-sans)');
+        if (btn) btn.innerText = '黑体';
+      }
+    }
+  </script>
+</body>
+</html>
